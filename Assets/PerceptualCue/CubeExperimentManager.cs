@@ -2,6 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+public enum ExperimentCondition
+{
+    TextOnly,
+    CueOnly,
+    TextAndCue
+}
 
 public class CubeExperimentManager : MonoBehaviour
 {
@@ -22,6 +28,9 @@ public class CubeExperimentManager : MonoBehaviour
     [Min(1)]
     [SerializeField] private int totalTrials = 20;
 
+    [SerializeField]
+    private ExperimentCondition currentCondition;
+
     [Tooltip("正确触碰后，下一次任务开始前的等待时间")]
     [Min(0f)]
     [SerializeField] private float intervalBetweenTrials = 1.0f;
@@ -31,6 +40,27 @@ public class CubeExperimentManager : MonoBehaviour
 
     [Tooltip("允许触发 Cube 的物体 Layer")]
     [SerializeField] private LayerMask validTouchLayers;
+
+    [ContextMenu("Start Text Only")]
+    public void StartTextOnly()
+    {
+        currentCondition = ExperimentCondition.TextOnly;
+        StartExperiment();
+    }
+
+    [ContextMenu("Start Cue Only")]
+    public void StartCueOnly()
+    {
+        currentCondition = ExperimentCondition.CueOnly;
+        StartExperiment();
+    }
+
+    [ContextMenu("Start Text + Cue")]
+    public void StartTextAndCue()
+    {
+        currentCondition = ExperimentCondition.TextAndCue;
+        StartExperiment();
+    }
 
     private ExperimentCube currentTarget;
     private int previousTargetIndex = -1;
@@ -135,7 +165,7 @@ public class CubeExperimentManager : MonoBehaviour
 
         SetText(
             $"Trial {currentTrialNumber + 1}/{totalTrials}\n" +
-            "准备"
+            "Ready"
         );
 
         if (delay > 0f)
@@ -168,19 +198,49 @@ public class CubeExperimentManager : MonoBehaviour
         currentTarget = experimentCubes[targetIndex];
 
         ResetAllCubes();
-        currentTarget.SetAsTarget(true);
 
-        // 在目标正式亮起后开始计时
+        // 根据当前实验 Condition 决定如何呈现目标
+        switch (currentCondition)
+        {
+            case ExperimentCondition.TextOnly:
+                // Text only:
+                // 不高亮 Cube，只通过文字告诉用户目标
+                currentTarget.SetAsTarget(false);
+
+                SetText(
+                    $"Trial {currentTrialNumber}/{totalTrials}\n" +
+                    $"Please poke the target cube: {currentTarget.name}"
+                );
+                break;
+
+            case ExperimentCondition.CueOnly:
+                // Cue only:
+                // 不显示文字，只高亮目标 Cube
+                currentTarget.SetAsTarget(true);
+
+                SetText("");
+                break;
+
+            case ExperimentCondition.TextAndCue:
+                // Text + Cue:
+                // 文字告诉用户动作，Cue 告诉用户目标
+                currentTarget.SetAsTarget(true);
+
+                SetText(
+                    $"Trial {currentTrialNumber}/{totalTrials}\n" +
+                    "Please poke the highlighted cube."
+                );
+                break;
+        }
+
+        // Cue / Text 出现后开始计时
         trialStartTime = Time.realtimeSinceStartup;
         trialActive = true;
 
-        SetText(
-            $"Trial {currentTrialNumber}/{totalTrials}\n" +
-            "触碰亮起的 Cube"
-        );
-
         Debug.Log(
-            $"Trial {currentTrialNumber} 开始，目标：{currentTarget.name}"
+            $"Trial {currentTrialNumber} started. " +
+            $"Condition: {currentCondition}, " +
+            $"Target: {currentTarget.name}"
         );
     }
 
@@ -249,15 +309,15 @@ public class CubeExperimentManager : MonoBehaviour
         currentTarget.SetAsTarget(false);
 
         Debug.Log(
-            $"Trial {currentTrialNumber} 正确。" +
-            $"反应时间：{reactionTime:F3} 秒，" +
-            $"错误次数：{currentTrialErrors}"
+            $"Trial {currentTrialNumber} correct." +
+            $"Reaction Time：{reactionTime:F3} 秒，" +
+            $"Error Number：{currentTrialErrors}"
         );
 
         SetText(
-            $"正确\n" +
-            $"用时：{reactionTime:F3} 秒\n" +
-            $"本次错误：{currentTrialErrors}"
+            $"Correct\n" +
+            $"Time：{reactionTime:F3} 秒\n" +
+            $"Errors：{currentTrialErrors}"
         );
 
         StartCoroutine(
@@ -271,8 +331,8 @@ public class CubeExperimentManager : MonoBehaviour
         totalErrors++;
 
         Debug.Log(
-            $"错误触碰：{touchedCube.name}。" +
-            $"当前 Trial 错误：{currentTrialErrors}"
+            $"Error Touch：{touchedCube.name}。" +
+            $"Current Trial error：{currentTrialErrors}"
         );
 
         SetText(
@@ -292,26 +352,26 @@ public class CubeExperimentManager : MonoBehaviour
         float averageReactionTime = CalculateAverageReactionTime();
 
         SetText(
-            "实验结束\n" +
-            $"平均反应时间：{averageReactionTime:F3} 秒\n" +
-            $"总错误次数：{totalErrors}"
+            "Experiment Complete\n" +
+            $"Average Reaction Time: {averageReactionTime:F3} s\n" +
+            $"Total Errors: {totalErrors}"
         );
 
-        Debug.Log("========== 实验结果 ==========");
+        Debug.Log("========== Experiment Results ==========");
 
         foreach (TrialResult result in trialResults)
         {
             Debug.Log(
                 $"Trial {result.trialNumber}, " +
                 $"Target: {result.targetName}, " +
-                $"Reaction Time: {result.reactionTime:F3}, " +
+                $"Reaction Time: {result.reactionTime:F3} s, " +
                 $"Errors: {result.errorCount}"
             );
         }
 
         Debug.Log(
-            $"平均反应时间：{averageReactionTime:F3} 秒，" +
-            $"总错误次数：{totalErrors}"
+            $"Average Reaction Time: {averageReactionTime:F3} s, " +
+            $"Total Errors: {totalErrors}"
         );
     }
 

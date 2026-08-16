@@ -41,4 +41,6 @@ public class ExperimentDebugLog : MonoBehaviour
         logLines.Clear();
         logText.text = "";
     }
+
+    
 }
