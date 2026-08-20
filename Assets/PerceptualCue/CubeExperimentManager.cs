@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using System;
+using System.IO;
 public enum ExperimentCondition
 {
     TextOnly,
@@ -28,6 +30,10 @@ public class CubeExperimentManager : MonoBehaviour
     [Min(1)]
     [SerializeField] private int totalTrials = 20;
 
+    [Header("Participant")]
+    [SerializeField]
+    private string participantID = "P001";
+
     [SerializeField]
     private ExperimentCondition currentCondition;
 
@@ -40,6 +46,9 @@ public class CubeExperimentManager : MonoBehaviour
 
     [Tooltip("允许触发 Cube 的物体 Layer")]
     [SerializeField] private LayerMask validTouchLayers;
+
+    [SerializeField]
+    private ExperimentDebugLog debugLog;
 
     [ContextMenu("Start Text Only")]
     public void StartTextOnly()
@@ -72,6 +81,8 @@ public class CubeExperimentManager : MonoBehaviour
     private float trialStartTime;
     private bool trialActive;
     private bool experimentRunning;
+
+    private string currentCsvFilePath;
 
     private readonly List<TrialResult> trialResults
         = new List<TrialResult>();
@@ -256,7 +267,7 @@ public class CubeExperimentManager : MonoBehaviour
         // 避免连续两次选择同一个 Cube
         do
         {
-            randomIndex = Random.Range(0, experimentCubes.Count);
+            randomIndex = UnityEngine.Random.Range(0, experimentCubes.Count);
         }
         while (randomIndex == previousTargetIndex);
 
@@ -296,12 +307,19 @@ public class CubeExperimentManager : MonoBehaviour
         float reactionTime =
             Time.realtimeSinceStartup - trialStartTime;
 
+        int totalTouches = currentTrialErrors + 1;
+
+        float errorRate =
+            (float)currentTrialErrors / totalTouches;
+
         TrialResult result = new TrialResult
         {
             trialNumber = currentTrialNumber,
             targetName = currentTarget.name,
+            condition = currentCondition,
             reactionTime = reactionTime,
-            errorCount = currentTrialErrors
+            errorCount = currentTrialErrors,
+            errorRate = errorRate
         };
 
         trialResults.Add(result);
@@ -351,6 +369,8 @@ public class CubeExperimentManager : MonoBehaviour
 
         float averageReactionTime = CalculateAverageReactionTime();
 
+        SaveResultsToCsv();
+
         SetText(
             "Experiment Complete\n" +
             $"Average Reaction Time: {averageReactionTime:F3} s\n" +
@@ -392,6 +412,51 @@ public class CubeExperimentManager : MonoBehaviour
         return totalTime / trialResults.Count;
     }
 
+    private void SaveResultsToCsv()
+    {
+        string fileName =
+            $"CubeExperiment_{participantID}_{currentCondition}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+        currentCsvFilePath = Path.Combine(
+            Application.persistentDataPath,
+            fileName
+        );
+
+        using (StreamWriter writer = new StreamWriter(currentCsvFilePath))
+        {
+            writer.WriteLine(
+                "ParticipantID," +
+                "Condition," +
+                "Trial," +
+                "TargetCube," +
+                "ReactionTimeSeconds," +
+                "ErrorCount," +
+                "ErrorRate"
+            );
+
+            foreach (TrialResult result in trialResults)
+            {
+                writer.WriteLine(
+                    $"{participantID}," +
+                    $"{result.condition}," +
+                    $"{result.trialNumber}," +
+                    $"{result.targetName}," +
+                    $"{result.reactionTime:F3}," +
+                    $"{result.errorCount}," +
+                    $"{result.errorRate:F3}"
+                );
+            }
+        }
+
+        Debug.Log(
+            $"Experiment results saved to: {currentCsvFilePath}"
+        );
+
+        debugLog.Log(
+        $"Experiment complete. Results saved to {Path.GetFileName(currentCsvFilePath)}"
+        );
+    }
+
     private void ResetAllCubes()
     {
         foreach (ExperimentCube cube in experimentCubes)
@@ -424,7 +489,9 @@ public class CubeExperimentManager : MonoBehaviour
     {
         public int trialNumber;
         public string targetName;
+        public ExperimentCondition condition;
         public float reactionTime;
         public int errorCount;
+        public float errorRate;
     }
 }

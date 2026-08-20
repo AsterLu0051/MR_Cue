@@ -6588,12 +6588,14 @@ MonoBehaviour:
   highlightMaterial: {fileID: 2100000, guid: 5090114f421e2704caa800730fbf7ac6, type: 2}
   experimentText: {fileID: 1802235726}
   totalTrials: 20
+  participantID: P001
   currentCondition: 2
   intervalBetweenTrials: 1
   startAutomatically: 0
   validTouchLayers:
     serializedVersion: 2
     m_Bits: 0
+  debugLog: {fileID: 151174772}
 --- !u!1 &1094985053
 GameObject:
   m_ObjectHideFlags: 0
