@@ -8,7 +8,8 @@ public enum ExperimentCondition
 {
     TextOnly,
     CueOnly,
-    TextAndCue
+    MinimalTextAndCue,
+    CompleteTextAndCue
 }
 
 public class CubeExperimentManager : MonoBehaviour
@@ -64,10 +65,17 @@ public class CubeExperimentManager : MonoBehaviour
         StartExperiment();
     }
 
-    [ContextMenu("Start Text + Cue")]
-    public void StartTextAndCue()
+    [ContextMenu("Start Minimal Text + Cue")]
+    public void StartMinimalTextAndCue()
     {
-        currentCondition = ExperimentCondition.TextAndCue;
+        currentCondition = ExperimentCondition.MinimalTextAndCue;
+        StartExperiment();
+    }
+
+    [ContextMenu("Start Complete Text + Cue")]
+    public void StartCompleteTextAndCue()
+    {
+        currentCondition = ExperimentCondition.CompleteTextAndCue;
         StartExperiment();
     }
 
@@ -214,32 +222,37 @@ public class CubeExperimentManager : MonoBehaviour
         switch (currentCondition)
         {
             case ExperimentCondition.TextOnly:
-                // Text only:
-                // 不高亮 Cube，只通过文字告诉用户目标
+
                 currentTarget.SetAsTarget(false);
 
                 SetText(
-                    $"Trial {currentTrialNumber}/{totalTrials}\n" +
-                    $"Please poke the target cube: {currentTarget.name}"
+                    $"Please poke {currentTarget.name}."
                 );
                 break;
 
+
             case ExperimentCondition.CueOnly:
-                // Cue only:
-                // 不显示文字，只高亮目标 Cube
+
                 currentTarget.SetAsTarget(true);
 
                 SetText("");
                 break;
 
-            case ExperimentCondition.TextAndCue:
-                // Text + Cue:
-                // 文字告诉用户动作，Cue 告诉用户目标
+
+            case ExperimentCondition.MinimalTextAndCue:
+
+                currentTarget.SetAsTarget(true);
+
+                SetText("Poke");
+                break;
+
+
+            case ExperimentCondition.CompleteTextAndCue:
+
                 currentTarget.SetAsTarget(true);
 
                 SetText(
-                    $"Trial {currentTrialNumber}/{totalTrials}\n" +
-                    "Please poke the highlighted cube."
+                    $"Please poke {currentTarget.name}."
                 );
                 break;
         }
