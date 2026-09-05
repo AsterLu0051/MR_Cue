@@ -6594,7 +6594,7 @@ MonoBehaviour:
   startAutomatically: 0
   validTouchLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4294967295
   debugLog: {fileID: 151174772}
 --- !u!1 &1094985053
 GameObject:
